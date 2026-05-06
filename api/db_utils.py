@@ -1,8 +1,12 @@
 import sqlite3
 from datetime import datetime
-
-DB_NAME = "rag_app.db"
-
+import logging
+import os
+# DB_NAME = "rag_app.db"
+DB_NAME = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 
+    "rag_app.db"
+)
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
@@ -29,10 +33,16 @@ def create_document_store():
 
 def insert_application_logs(session_id, user_query, gpt_response, model):
     conn = get_db_connection()
-    conn.execute('INSERT INTO application_logs (session_id, user_query, gpt_response, model) VALUES (?, ?, ?, ?)',
-                 (session_id, user_query, gpt_response, model))
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute('INSERT INTO application_logs (session_id, user_query, gpt_response, model) VALUES (?, ?, ?, ?)',
+                    (session_id, user_query, gpt_response, model))
+        conn.commit()
+        logging.info(f"DB: Inserted log for session {session_id[:8]}...")
+    except Exception as e:
+        logging.error(f"DB: Failed to insert log: {e}")
+        raise
+    finally:
+        conn.close()
 
 def get_chat_history(session_id):
     conn = get_db_connection()

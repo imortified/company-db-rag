@@ -5,7 +5,7 @@ from datetime import datetime
 class ModelName(str, Enum):
     LLAMA3_2 = "llama3.2"
     # QWEN_4b = "qwen:4b"
-    
+    GRANITE = 'granite4.1:8b'
 
 class QueryInput(BaseModel):
     question: str

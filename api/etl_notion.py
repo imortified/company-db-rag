@@ -14,13 +14,10 @@ notion = Client(auth=NOTION_SECRET)
 def delete_old_notion_data(): # функция для удаления старых данных Notion перед новой синхронизацией
     try:
         print("Deleting old Notion data...")
-
         all_documents = get_all_documents()
         notion_documents = [doc for doc in all_documents if doc['filename'].startswith('notion_')]
-        
         deleted_count = 0
         
-        # Удаляем каждый документ Notion из Chroma и базы данных
         for doc in notion_documents:
             try:
                 chroma_success = delete_doc_from_chroma(doc['id'])

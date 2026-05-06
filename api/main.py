@@ -9,27 +9,59 @@ import uuid
 import logging
 import shutil
 from typing import Dict
+from multiagent_system import rag_agent
+from langchain_core.messages import HumanMessage, AIMessage
+from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(filename='app.log', level=logging.INFO, encoding='utf-8')
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 indexing_tasks: Dict[str, str] = {}
+
 
 @app.post("/chat", response_model=QueryResponse)
 def chat(query_input: QueryInput):
     session_id = query_input.session_id or str(uuid.uuid4())
-    logging.info(f"Session ID: {session_id}, User Query: {query_input.question}, , Model: {query_input.model.value}")
+    logging.info(f"Session ID: {session_id}, User Query: {query_input.question}, Model: {query_input.model.value}")
     
-    chat_history = get_chat_history(session_id)
-    rag_chain = get_rag_chain(query_input.model.value)
-    answer = rag_chain.invoke({
-        "input": query_input.question,
-        "chat_history": chat_history
-    })['answer']
-
-    insert_application_logs(session_id, query_input.question, answer, query_input.model.value)
-    logging.info(f"Session ID: {session_id}, AI Response: {answer}")
+    # Получаем историю в формате LangChain BaseMessage
+    raw_history = get_chat_history(session_id)
+    chat_history = []
+    for m in raw_history:
+        if m["role"] == "human":
+            chat_history.append(HumanMessage(content=m["content"]))
+        else:
+            chat_history.append(AIMessage(content=m["content"]))
+    
+    # Запускаем мультиагентную систему
+    state = {
+        "question": query_input.question,
+        "chat_history": chat_history,
+        "plan": [],
+        "current_step": 0,
+        "context_data": [],
+        "generation": "",
+        "critique": None,
+        "iterations": 0,
+        "max_iterations": 2
+    }
+    final_state = rag_agent(state)
+    answer = final_state["generation"]
+    try:
+        insert_application_logs(session_id, query_input.question, answer, query_input.model.value)
+    except Exception as db_err:
+        logging.error(f"SQLite logging failed: {db_err}")
+    #insert_application_logs(session_id, query_input.question, answer, query_input.model.value)
+    logging.info(f"Session ID: {session_id}, AI Response: {answer[:200]}")
     return QueryResponse(answer=answer, session_id=session_id, model=query_input.model)
 
 

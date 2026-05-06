@@ -34,7 +34,7 @@ qa_prompt = ChatPromptTemplate.from_messages([
 ])
 
 document_prompt = PromptTemplate.from_template(
-    "Источник: {source}\n{page_content}"
+    "Источник: {source};\n{page_content}"
 )
 
 def get_rag_chain(model="llama3.2"):
