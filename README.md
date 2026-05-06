@@ -1,1 +1,0 @@
-# company-db-rag
