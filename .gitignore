@@ -1,0 +1,17 @@
+# Игнорируем зависимости и билды фронтенда
+rag-frontend/node_modules/
+rag-frontend/.next/
+rag-frontend/dist/
+rag-frontend/.turbo/
+rag-frontend/*.log
+
+# Игнорируем env-файлы (секреты)
+rag-frontend/.env.local
+rag-frontend/.env*.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.db
+app.log
